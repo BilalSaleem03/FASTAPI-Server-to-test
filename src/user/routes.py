@@ -19,6 +19,7 @@
 from fastapi import APIRouter
 from src.user.controllers import get_users, get_user, create_user
 
+
 user_routes = APIRouter(prefix="/api/users", tags=["Users"])
 
 user_routes.get("/")(get_users)
