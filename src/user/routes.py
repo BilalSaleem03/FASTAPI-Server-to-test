@@ -18,10 +18,11 @@
 #     return create_user()
 from fastapi import APIRouter
 from src.user.controllers import get_users, get_user, create_user
+from src.flask_apis.middleware import authenticate_request
 
 
 user_routes = APIRouter(prefix="/api/users", tags=["Users"])
 
-user_routes.get("/")(get_users)
-user_routes.get("/{user_id}")(get_user)
-user_routes.post("/")(create_user)
+user_routes.get("/")(authenticate_request(get_users))
+user_routes.get("/{user_id}")(authenticate_request(get_user))
+user_routes.post("/")(authenticate_request(create_user))

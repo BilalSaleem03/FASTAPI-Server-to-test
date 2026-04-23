@@ -2,6 +2,7 @@
 
 
 @app.route('/api/flask-apis', methods=['GET'])
+@authenticate_request
 def get_users():
     users = [{'id': 1, 'name': 'John'}, {'id': 2, 'name': 'Jane'}]
     return jsonify(users), 200
