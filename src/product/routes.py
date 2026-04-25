@@ -10,17 +10,18 @@ async def get_all_products():
     middelware_1()
     middelware_2()
     return get_all_products()
+
 @product_routes.get("/{product_id}")
 async def get_product(product_id: int):
     middelware_1()
     middelware_2()
     return get_product(product_id)
-async def get_all_products():
-    return get_all_products()
+# async def get_all_products():
+#     return get_all_products()
 
-@product_routes.get("/{product_id}")
-async def get_product(product_id: int):
-    return get_product(product_id)
+# @product_routes.get("/{product_id}")
+# async def get_product(product_id: int):
+#     return get_product(product_id)
 
 @product_routes.put("/{product_id}")
 async def update_product(product_id: int):
