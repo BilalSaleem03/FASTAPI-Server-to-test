@@ -73,3 +73,69 @@ def get_user(user_id):
 @app.route('/api/flask-apis/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
     return jsonify({'message': f'User {user_id} deleted'}), 200
+
+
+
+from flask import Flask, request
+import logging
+
+app = Flask(__name__)
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.json.get('username')
+    password = request.json.get('password')
+    
+    # MEDIUM: Logging sensitive information
+    print(f"User login attempt: {username} with password: {password}")
+    logging.info(f"Login - Username: {username}, Password: {password}")
+    
+    return {"success": True}
+
+
+import random
+import string
+from flask import Flask, request
+
+app = Flask(__name__)
+
+@app.route('/reset-password', methods=['POST'])
+def reset_password():
+    email = request.json.get('email')
+    
+    # MEDIUM: Using weak random for security token
+    token = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+    # Predictable token (only 6 chars, weak randomness)
+    
+    print(f"Reset token for {email}: {token}")
+    return {"reset_token": token}
+
+@app.route('/generate-api-key')
+def generate_api_key():
+    # MEDIUM: Using random.randint for API key
+    api_key = random.randint(1000000, 9999999)
+    return {"api_key": api_key}
+
+from flask import Flask, request
+
+app = Flask(__name__)
+
+# MEDIUM: No rate limiting on login endpoint
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.json.get('username')
+    password = request.json.get('password')
+    
+    # No limit on how many times someone can try to login
+    # Attacker can brute-force passwords indefinitely
+    
+    if username == "admin" and password == "secret":
+        return {"success": True, "token": "admin_token"}
+    return {"success": False}, 401
+
+@app.route('/api/submit', methods=['POST'])
+def submit_form():
+    # MEDIUM: No rate limiting on form submission
+    # Attacker can spam thousands of requests
+    data = request.json
+    return {"message": "Form submitted"}
