@@ -3,6 +3,7 @@ import uvicorn
 from src.user.routes import user_routes
 from src.product.routes import product_routes
 from src.order.routes import order_routes
+from src.flask_apis.routes import flask_routes
 
 app = FastAPI(title="Multi-Module API", description="API with three modules")
 
@@ -10,6 +11,7 @@ app = FastAPI(title="Multi-Module API", description="API with three modules")
 app.include_router(user_routes)
 app.include_router(product_routes)
 app.include_router(order_routes)
+app.include_router(flask_routes)
 
 @app.get("/")
 async def root():

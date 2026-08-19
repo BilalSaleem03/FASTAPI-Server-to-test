@@ -1,6 +1,6 @@
 # urls.py
-from django.urls import path
-from . import views
+# from django.urls import path
+# from . import views
 
 # urlpatterns = [
 #     # 1. GET route - Fetch all products

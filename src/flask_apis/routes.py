@@ -1,141 +1,64 @@
-app.secret_key = "super_secret_hardcoded_key_12345"
-API_KEY = "sk-prod-abc123hardcodedapikey"
-DB_PASSWORD = "admin123"
+from fastapi import APIRouter, Body, Query
+from fastapi.responses import PlainTextResponse
 
-# VULNERABILITY 2: SQL Injection (CWE-89, OWASP A03)
-@app.route('/api/flask-apis', methods=['GET'])
-@authenticate_request
-def get_users():
-    user_id = request.args.get('id')
-    # Direct string formatting in SQL query — classic SQL injection
-    conn = sqlite3.connect('users.db')
-    cursor = conn.cursor()
-    query = "SELECT * FROM users WHERE id = " + user_id
-    cursor.execute(query)
-    users = cursor.fetchall()
-    return jsonify(users)
+flask_routes = APIRouter(tags=["Recon test endpoints"])
 
 
-# VULNERABILITY 3: Command Injection (CWE-78, OWASP A03)
-@app.route('/api/flask-apis', methods=['POST'])
-def create_user():
-    data = request.get_json()
-    name = data.get('name')
-    # Passing user input directly to shell command
-    os.system(f"echo New user created: {name} >> /var/log/users.log")
-    return create_user_controller(name)
+@flask_routes.get("/api/flask-apis")
+async def flask_api_users(id: str | None = Query(default=None)):
+    return {"users": [{"id": id or "1", "name": "Bilal"}]}
 
 
-# VULNERABILITY 4: Weak Cryptography (CWE-327, OWASP A02)
-@app.route('/api/flask-apis/password', methods=['POST'])
-def hash_password():
-    data = request.get_json()
-    password = data.get('password')
-    # MD5 is cryptographically broken
-    hashed = hashlib.md5(password.encode()).hexdigest()
-    return jsonify({"hashed": hashed})
+@flask_routes.post("/api/flask-apis")
+async def flask_api_create_user(data: dict = Body(default_factory=dict)):
+    return {"message": "User created", "name": data.get("name")}
 
 
-# VULNERABILITY 5: Insecure Deserialization (CWE-502, OWASP A08)
-@app.route('/api/flask-apis/load', methods=['POST'])
-def load_user():
-    data = request.get_json()
-    user_data = data.get('user_data')
-    # pickle.loads on user input is extremely dangerous
-    user = pickle.loads(user_data.encode())
-    return jsonify(user)
+@flask_routes.post("/login")
+async def login(data: dict = Body(default_factory=dict)):
+    return {"success": True, "username": data.get("username")}
 
 
-# VULNERABILITY 6: Path Traversal (CWE-22, OWASP A01)
-@app.route('/api/flask-apis/file', methods=['GET'])
-def get_file():
-    filename = request.args.get('filename')
-    # User controls the file path — can read any file on server
-    with open(f"/var/app/files/{filename}", 'r') as f:
-        content = f.read()
-    return jsonify({"content": content})
+@flask_routes.get("/api/flask-apis/{user_id}")
+async def flask_api_user(user_id: int):
+    return {"user_id": user_id, "name": f"User {user_id}"}
 
 
-# VULNERABILITY 7: Shell Injection via subprocess (CWE-78, OWASP A03)
-@app.route('/api/flask-apis/ping', methods=['GET'])
-def ping_host():
-    host = request.args.get('host')
-    # shell=True with user input is dangerous
-    result = subprocess.run(f"ping -c 1 {host}", shell=True, capture_output=True)
-    return jsonify({"result": result.stdout.decode()})
-
-# 3. GET route - Fetch specific user by ID
-@app.route('/api/flask-apis/<int:user_id>', methods=['GET'])
-def get_user(user_id):
-    return get_user_controller(user_id)
-
-# 4. DELETE route - Delete a user
-@app.route('/api/flask-apis/<int:user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    return jsonify({'message': f'User {user_id} deleted'}), 200
+@flask_routes.delete("/api/flask-apis/{user_id}")
+async def flask_api_delete_user(user_id: int):
+    return {"message": f"User {user_id} deleted"}
 
 
-
-from flask import Flask, request
-import logging
-
-app = Flask(__name__)
-
-@app.route('/login', methods=['POST'])
-def login():
-    username = request.json.get('username')
-    password = request.json.get('password')
-    
-    # MEDIUM: Logging sensitive information
-    print(f"User login attempt: {username} with password: {password}")
-    logging.info(f"Login - Username: {username}, Password: {password}")
-    
-    return {"success": True}
+@flask_routes.get("/.env", response_class=PlainTextResponse)
+async def exposed_env():
+    return (
+        "DATABASE_URL=postgresql://postgres:secret123@localhost:5432/production_db\n"
+        "JWT_SECRET=super_secret_jwt_key_9999\n"
+        "STRIPE_API_KEY=sk_live_51OzTestingFakeKey123456\n"
+        "DEBUG=True\n"
+    )
 
 
-import random
-import string
-from flask import Flask, request
+@flask_routes.get("/.git/HEAD", response_class=PlainTextResponse)
+async def exposed_git_head():
+    return "ref: refs/heads/main\n"
 
-app = Flask(__name__)
 
-@app.route('/reset-password', methods=['POST'])
-def reset_password():
-    email = request.json.get('email')
-    
-    # MEDIUM: Using weak random for security token
-    token = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
-    # Predictable token (only 6 chars, weak randomness)
-    
-    print(f"Reset token for {email}: {token}")
-    return {"reset_token": token}
+@flask_routes.get("/swagger.json")
+async def exposed_swagger():
+    return {
+        "swagger": "2.0",
+        "info": {"title": "Internal Admin API", "version": "1.0"},
+        "paths": {"/admin/debug": {"get": {"description": "Internal diagnostics"}}},
+    }
 
-@app.route('/generate-api-key')
-def generate_api_key():
-    # MEDIUM: Using random.randint for API key
-    api_key = random.randint(1000000, 9999999)
-    return {"api_key": api_key}
 
-from flask import Flask, request
-
-app = Flask(__name__)
-
-# MEDIUM: No rate limiting on login endpoint
-@app.route('/login', methods=['POST'])
-def login():
-    username = request.json.get('username')
-    password = request.json.get('password')
-    
-    # No limit on how many times someone can try to login
-    # Attacker can brute-force passwords indefinitely
-    
-    if username == "admin" and password == "secret":
-        return {"success": True, "token": "admin_token"}
-    return {"success": False}, 401
-
-@app.route('/api/submit', methods=['POST'])
-def submit_form():
-    # MEDIUM: No rate limiting on form submission
-    # Attacker can spam thousands of requests
-    data = request.json
-    return {"message": "Form submitted"}
+@flask_routes.get("/actuator/health")
+async def exposed_actuator():
+    return {
+        "status": "UP",
+        "components": {
+            "db": {"status": "UP", "details": {"database": "PostgreSQL"}},
+            "redis": {"status": "UP"},
+        },
+    }
