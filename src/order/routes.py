@@ -8,11 +8,15 @@ from src.order.controllers import (
 	order_debug_info,
 	search_orders,
 	cancel_order,
+	unstable_order_processing,
+	slow_order_report,
 )
 
 order_routes = APIRouter(prefix="/api/orders", tags=["Orders"])
 
 order_routes.get("/")(get_orders)
+order_routes.get("/unstable")(unstable_order_processing)
+order_routes.get("/slow-report")(slow_order_report)
 order_routes.get("/search")(search_orders)
 order_routes.post("/export")(export_orders)
 order_routes.get("/generate-token")(generate_order_token)

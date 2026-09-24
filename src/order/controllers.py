@@ -5,7 +5,7 @@ import random
 import sqlite3
 import subprocess
 
-from fastapi import Header
+from fastapi import Header, HTTPException
 
 
 # def get_order(order_id: str):
@@ -58,3 +58,22 @@ async def order_debug_info():
         "database_url": os.environ.get("DATABASE_URL", "postgresql://localhost/db"),
         "server_path": os.getcwd(),
     }
+
+_order_stress_counter = 0
+
+async def unstable_order_processing():
+    """Simulates database lock / concurrency failure under load (HTTP 500)."""
+    global _order_stress_counter
+    _order_stress_counter += 1
+    if _order_stress_counter % 3 == 0 or random.random() < 0.35:
+        raise HTTPException(
+            status_code=500,
+            detail="SERVER_CRASH: Order transaction deadlock under high concurrency",
+        )
+    return {"status": "order_processed", "transaction_id": _order_stress_counter}
+
+async def slow_order_report():
+    """Simulates heavy CPU / blocking aggregation stalling the event loop."""
+    import time
+    time.sleep(1.8)
+    return {"status": "report_ready", "orders_analyzed": 5000}
